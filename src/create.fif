@@ -1,0 +1,51 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+// usage
+{ ."usage: " @' $0 type ." <workchain-id> <k> <public-key-0> [...<public-key-n>]" cr
+  ."Creates a new multisig wallet." cr 1 halt
+} : usage
+
+// initialize arguments
+def? $3 ' usage ifnot
+$1 parse-workchain-id =: workchain
+$2 parse-int =: k
+$# 2 - k < abort"k <= n expected"
+
+// c4
+// public keys
+<b $# $() parse-int 256 u, b>
+$# box constant n
+{ n @ 1- dup n ! 2 > } { <b n @ $() parse-int 256 u, swap ref, b> } while
+// seqno, k, keys ref
+<b 0 32 u, k 8 u, swap ref, b>
+
+// state init cell
+<b
+b{0011} s, // 0 no split_depth, 0 no special, 1 code just, 1 data just
+PROGRAM{ "contract.fif" include }END>c ref, // code ref
+swap ref, // data ref
+null dict, // 0 no dict
+b>
+
+// create address as hash of the state init, save, print
+dup hashu workchain swap 2dup 2constant address
+."wallet address = " 2dup .addr cr
+2dup "wallet.addr" save-address-verbose
+."Non-bounceable address (for init): " 2dup 7 .Addr cr
+."Bounceable address (for later access): " 6 .Addr cr
+
+// create message cell
+<b
+b{1000100} s, // 10 ext in info, 00 src none, 10 dest std, 0 no anycast
+address addr,
+b{000010} s, // 0000 fee 0, 1 init just, 0 state init left
+swap <s s, // state init cell
+b{0} s, // 0 body left
+0 4 u, // body flag
+b>
+
+// create bag of cell from the message, save, print
+2 boc+>B "wallet.boc" tuck B>file
+."Message saved to file " type cr

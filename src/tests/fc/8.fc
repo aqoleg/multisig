@@ -1,0 +1,100 @@
+int sum(int x) {
+  int sum = 0;
+  while (x > 0) {
+    if (x & 1) {
+      sum += 1;
+    }
+    x >>= 1;
+  }
+  return sum;
+}
+
+() recv_internal(slice in_msg) impure {
+  if (in_msg~load_uint(4) == 0) {
+    return();
+  }
+  slice signed_msg = (in_msg~load_ref()).begin_parse();
+  var msg_hash = slice_hash(signed_msg);
+  int seqno = signed_msg~load_uint(32);
+  int exp_time = signed_msg~load_uint(32);
+  throw_if(35, 1000 > exp_time); ;; now() > exp_time
+  cell target_msg = signed_msg~load_ref();
+
+  slice data = get_data().begin_parse();
+  throw_if(33, data~load_uint(32) != seqno);
+  int k = data~load_uint(8);
+
+  int correct_signatures = 0;
+  int key_mask = 1;
+  slice key_slice = data;
+  do {
+    key_slice = (key_slice~load_ref()).begin_parse();
+    var key = key_slice~load_uint(256);
+    slice signatures_slice = in_msg;
+
+    do {
+      signatures_slice = (signatures_slice~load_ref()).begin_parse();
+      if (key == signatures_slice~load_uint(256)) {
+        if (check_signature(msg_hash, signatures_slice~load_bits(512), key)) {
+          correct_signatures = correct_signatures | key_mask;
+        }
+      }
+    } until (signatures_slice.slice_refs() == 0);
+
+    key_mask <<= 1;
+  } until (key_slice.slice_refs() == 0);
+
+  throw_if(34, correct_signatures == 0);
+  int msg_not_sent = true;
+  accept_message();
+
+  if (sum(correct_signatures) >= k) {
+    msg_not_sent = false;
+    send_raw_message(target_msg, 3);
+  }
+
+  var target_msg_hash = cell_hash(target_msg);
+  var keys = data~load_ref();
+  var orders = begin_cell();
+  int has_orders = false;
+
+  var new_data = begin_cell();
+
+  while (data.slice_refs()) {
+    data = (data~load_ref()).begin_parse();
+    int order_exp_time = data~load_uint(32);
+    if (1000 < order_exp_time) {  ;; now() < exp_time
+      int order_correct_signatures = data~load_uint(128);
+      int order_target_msg_hash = data~load_uint(256);
+      int save_order = true;
+      if ((order_exp_time == exp_time) &
+        (order_target_msg_hash == target_msg_hash)) {
+        if (msg_not_sent) {
+          order_correct_signatures = order_correct_signatures |
+            correct_signatures;
+          if (sum(order_correct_signatures) >= k) {
+            save_order = false;
+            msg_not_sent = false;
+            send_raw_message(target_msg, 3);
+          }
+        } else {
+          save_order = false;
+        }
+
+        new_data = new_data.store_uint(order_correct_signatures, 128);
+        new_data = new_data.store_int(save_order, 1);
+        new_data = new_data.store_int(msg_not_sent, 1);
+
+      }
+    }
+  }
+
+  new_data = new_data
+    .store_uint(seqno + 1, 32)
+    .store_uint(k, 8)
+    .store_ref(keys);
+  if (has_orders) {
+    new_data = new_data.store_ref(orders.end_cell());
+  }
+  set_data(new_data.end_cell());
+}

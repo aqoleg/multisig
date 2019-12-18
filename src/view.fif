@@ -1,0 +1,31 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+
+"tx.boc" dup file-exists? not abort"/tx.boc file do not found"
+
+file>B B>boc
+
+<s
+7 u@+ swap 0b1000100 <> abort"0b1000100"
+8 i@+ 256 u@+ -rot ."multisig wallet address: " .addr cr
+6 u@+ swap 0b0 <> abort"0b000000"
+4 u@+ swap 0b0 <> not abort"0b0000"
+// signed message
+ref@+ <s
+32 u@+ swap ."seqno: " . cr
+32 u@+ swap ."expiration time: " . cr
+ref@+
+swap s>
+// target message
+dup hash ."target message hash: " . cr
+<s
+2 u@+ swap 0b01 <> abort"0b01"
+1 i@+
+6 u@+ swap 0b000100 <> abort"0b000100"
+8 i@+ 256 u@+ 3 -roll rot 7 + ."destination address: " .Addr cr
+Gram@+ swap ."amount: " .GR cr
+108 u@+ swap 0b0 <> abort"0"
+s>
+{ dup srefs 0<> }
+{ ref@+ swap s> <s 256 u@+ swap ."public key: " . cr 64 B@+ nip } while
+s>

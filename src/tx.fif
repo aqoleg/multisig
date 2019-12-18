@@ -1,0 +1,60 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+
+// usage
+{ ."usage: " @' $0 type ." <filename-base> <multisig-addr> <dest-addr> <seqno> <amount> <exp_time>" cr
+  ."Creates a new multisig transaction." cr 1 halt
+} : usage
+
+// initialize arguments
+$# 6 - 0= ' usage ifnot
+$1 +".pk" load-keypair =: priv =: pub
+$2 parse-smc-addr drop 2=: multisig_addr
+$3 parse-smc-addr =: bounce 2=: dest_addr
+$4 parse-int =: seqno
+$5 $>GR =: amount
+$6 parse-int =: exp_time
+
+// target_msg
+<b
+b{01} s, // 0 int_msg_info, 1 ihr_disabled true
+bounce 1 i, // bounce bool
+b{000100} s, // 000 -?, 10 dest addr_std, 0 no anycast 
+dest_addr addr,
+amount Gram,
+0 9 64 32 + + 1+ u, // zeros: 1 extra_curr, 4 ihr, 4 fwd, 64 lt, 32 at, 1 init
+0 2 u, // 0 body left, 0 body
+b>
+
+// signed_msg
+<b
+seqno 32 u,
+exp_time 32 u,
+swap ref,
+b>
+
+// signatures
+dup hashu
+<b
+pub B,
+swap priv ed25519_sign_uint B,
+b>
+
+// body cell, flag, signed_msg ref, signatures ref
+<b
+1 4 u,
+rot ref,
+swap ref,
+b>
+
+// create message cell
+<b
+b{1000100} s, // 10 ext in info, 00 src none, 10 dest std, 0 no anycast
+multisig_addr addr,
+b{000000} s, // 0000 fee 0, 0 no init, 0 body left
+swap <s s, // body cell
+b>
+
+// create bag of cell from the message, save, print
+2 boc+>B "tx.boc" tuck B>file
+."Message saved to file " type cr

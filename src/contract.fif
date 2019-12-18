@@ -1,0 +1,420 @@
+// automatically generated from `../src/crypto/smartcont/stdlib.fc` `contract.fc` 
+DECLPROC sum
+DECLPROC recv_internal
+DECLPROC recv_external
+85143 DECLMETHOD seqno
+90420 DECLMETHOD getk
+78225 DECLMETHOD getn
+87469 DECLMETHOD getkey
+99085 DECLMETHOD getordersn
+78987 DECLMETHOD getexptime
+68074 DECLMETHOD getsignatures
+123433 DECLMETHOD gethash
+sum PROC:<{
+  0 PUSHINT
+  WHILE:<{
+    OVER
+    0 GTINT
+  }>DO<{
+    OVER
+    1 PUSHINT
+    AND
+    IF:<{
+      INC
+    }>
+    SWAP
+    1 RSHIFT#
+    SWAP
+  }>
+  NIP
+}>
+recv_internal PROC:<{
+  DROP
+}>
+recv_external PROC:<{
+  4 LDU
+  SWAP
+  0 EQINT
+  IFJMP:<{
+    DROP
+    ACCEPT
+  }>
+  LDREF
+  SWAP
+  CTOS
+  DUP
+  HASHSU
+  SWAP
+  32 LDU
+  32 LDU
+  1000 PUSHINT
+  s2 PUSH
+  GREATER
+  35 THROWIF
+  LDREF
+  DROP
+  c4 PUSH
+  CTOS
+  32 LDU
+  s1 s4 XCPU
+  NEQ
+  33 THROWIF
+  8 LDU
+  0 PUSHINT
+  1 PUSHINT
+  s2 PUSH
+  UNTIL:<{
+    LDREF
+    DROP
+    CTOS
+    256 LDU
+    s10 PUSH
+    UNTIL:<{
+      LDREF
+      DROP
+      CTOS
+      256 LDU
+      s3 s1 PUXC
+      EQUAL
+      IF:<{
+        9 PUSHPOW2
+        LDSLICEX
+        s11 s1 PUXC
+        s4 PUSH
+        CHKSIGNU
+        IF:<{
+          s4 s3 XCPU
+          OR
+        }>ELSE<{
+          s0 s4 XCHG
+        }>
+      }>ELSE<{
+        s0 s4 XCHG
+      }>
+      s4 PUSH
+      SREFS
+      0 EQINT
+      s1 s5 XCHG
+    }>
+    DROP
+    NIP
+    SWAP
+    1 LSHIFT#
+    OVER
+    SREFS
+    0 EQINT
+    s1 s2 XCHG
+  }>
+  2DROP
+  s6 POP
+  s6 POP
+  s4 PUSH
+  0 EQINT
+  34 THROWIF
+  TRUE
+  TRUE
+  ACCEPT
+  s6 PUSH
+  sum CALLDICT
+  s3 PUSH
+  GEQ
+  IF:<{
+    2DROP
+    OVER
+    3 PUSHINT
+    SENDRAWMSG
+    FALSE
+    FALSE
+  }>
+  s0 s7 XCHG
+  LDREF
+  s4 PUSH
+  HASHCU
+  NEWC
+  FALSE
+  WHILE:<{
+    s3 PUSH
+    SREFS
+  }>DO<{
+    s0 s3 XCHG
+    LDREF
+    DROP
+    CTOS
+    32 LDU
+    1000 PUSHINT
+    s2 PUSH
+    LESS
+    IF:<{
+      128 LDU
+      256 LDU
+      TRUE
+      s4 s12 PUSH2
+      EQUAL
+      s3 s7 PUSH2
+      EQUAL
+      AND
+      IF:<{
+        s9 POP
+        FALSE
+        s15 PUSH
+        IF:<{
+          s3 s14 XCPU
+          OR
+          DUP
+          sum CALLDICT
+          s11 PUSH
+          GEQ
+          IF:<{
+            s9 POP
+            s14 POP
+            FALSE
+            FALSE
+            s11 PUSH
+            3 PUSHINT
+            SENDRAWMSG
+          }>ELSE<{
+            s15 s9 XCHG2
+            SWAP
+          }>
+        }>ELSE<{
+          s9 POP
+          s8 s1 s14 XCHG3
+          FALSE
+          SWAP
+        }>
+      }>ELSE<{
+        s1 s15 XCHG
+        s3 s9 XCHG
+        SWAP
+      }>
+      SWAP
+      IF:<{
+        NEWC
+        s1 s4 XCHG
+        32 STU
+        s1 s8 XCHG
+        128 STU
+        s1 s7 XCHG
+        256 STU
+        s4 PUSH
+        IF:<{
+          s0 s2 XCHG
+          ENDC
+          ROT
+          STREF
+        }>ELSE<{
+          s2 POP
+          s3 POP
+          TRUE
+          s3 s3 XCHG2
+        }>
+      }>ELSE<{
+        s8 s1 s4 XCHG3
+        s0 s3 XCHG
+        3 BLKDROP
+      }>
+    }>ELSE<{
+      s12 s12 s12 XCHG3
+      DROP
+    }>
+    s1 s11 XCHG
+    s0 s3 XCHG2
+  }>
+  s3 POP
+  s6 POP
+  s9 POP
+  s0 s2 XCHG
+  IF:<{
+    NEWC
+    s1 s5 XCHG
+    32 STU
+    s1 s6 XCHG
+    128 STU
+    s1 s6 XCHG
+    256 STU
+    s4 PUSH
+    IF:<{
+      SWAP
+      ENDC
+      SWAP
+      STREF
+    }>ELSE<{
+      NIP
+      s3 POP
+      TRUE
+      s0 s3 XCHG
+    }>
+  }>ELSE<{
+    s7 s6 s4 XCHG3
+    3 BLKDROP
+  }>
+  s0 s2 XCHG
+  INC
+  NEWC
+  32 STU
+  s1 s4 XCHG
+  8 STU
+  s1 s3 XCHG
+  STREF
+  SWAP
+  IF:<{
+    SWAP
+    ENDC
+    SWAP
+    STREF
+  }>ELSE<{
+    NIP
+  }>
+  ENDC
+  c4 POP
+}>
+seqno PROC:<{
+  c4 PUSH
+  CTOS
+  32 PLDU
+}>
+getk PROC:<{
+  c4 PUSH
+  CTOS
+  32 LDU
+  NIP
+  8 PLDU
+}>
+getn PROC:<{
+  c4 PUSH
+  CTOS
+  0 PUSHINT
+  WHILE:<{
+    OVER
+    SREFS
+  }>DO<{
+    SWAP
+    LDREF
+    DROP
+    CTOS
+    SWAP
+    INC
+  }>
+  NIP
+}>
+getkey PROC:<{
+  c4 PUSH
+  CTOS
+  WHILE:<{
+    DUP
+    SREFS
+  }>DO<{
+    LDREF
+    DROP
+    CTOS
+    OVER
+    0 EQINT
+    IFJMP:<{
+      NIP
+      256 PLDU
+    }>
+    SWAP
+    DEC
+    SWAP
+  }>
+  2DROP
+  -1 PUSHINT
+}>
+getordersn PROC:<{
+  c4 PUSH
+  CTOS
+  LDREF
+  NIP
+  0 PUSHINT
+  WHILE:<{
+    OVER
+    SREFS
+  }>DO<{
+    SWAP
+    LDREF
+    DROP
+    CTOS
+    SWAP
+    INC
+  }>
+  NIP
+}>
+getexptime PROC:<{
+  c4 PUSH
+  CTOS
+  LDREF
+  NIP
+  WHILE:<{
+    DUP
+    SREFS
+  }>DO<{
+    LDREF
+    DROP
+    CTOS
+    OVER
+    0 EQINT
+    IFJMP:<{
+      NIP
+      32 PLDU
+    }>
+    SWAP
+    DEC
+    SWAP
+  }>
+  2DROP
+  -1 PUSHINT
+}>
+getsignatures PROC:<{
+  c4 PUSH
+  CTOS
+  LDREF
+  NIP
+  WHILE:<{
+    DUP
+    SREFS
+  }>DO<{
+    LDREF
+    DROP
+    CTOS
+    OVER
+    0 EQINT
+    IFJMP:<{
+      NIP
+      32 LDU
+      NIP
+      128 PLDU
+    }>
+    SWAP
+    DEC
+    SWAP
+  }>
+  2DROP
+  -1 PUSHINT
+}>
+gethash PROC:<{
+  c4 PUSH
+  CTOS
+  LDREF
+  NIP
+  WHILE:<{
+    DUP
+    SREFS
+  }>DO<{
+    LDREF
+    DROP
+    CTOS
+    OVER
+    0 EQINT
+    IFJMP:<{
+      NIP
+      160 LDU
+      NIP
+      256 PLDU
+    }>
+    SWAP
+    DEC
+    SWAP
+  }>
+  2DROP
+  -1 PUSHINT
+}>

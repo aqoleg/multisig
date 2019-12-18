@@ -1,0 +1,38 @@
+int sum(int x) {
+  int sum = 0;
+  while (x > 0) {
+    if (x & 1) {
+      sum += 1;
+    }
+    x >>= 1;
+  }
+  return sum;
+}
+
+() recv_internal(slice in_msg) impure {
+  if (in_msg~load_uint(4) == 0) {
+    return();
+  }
+  slice signed_msg = (in_msg~load_ref()).begin_parse();
+  var msg_hash = slice_hash(signed_msg);
+  int seqno = signed_msg~load_uint(32);
+  int exp_time = signed_msg~load_uint(32);
+  throw_if(35, 1000 > exp_time); ;; now() > exp_time
+  cell target_msg = signed_msg~load_ref();
+
+  slice data = get_data().begin_parse();
+  throw_if(33, data~load_uint(32) != seqno);
+  int k = data~load_uint(8);
+
+  var keys = data~load_ref();
+  var new_data = begin_cell()
+    .store_uint(seqno + 1, 32)
+    .store_uint(k, 8)
+    .store_ref(keys);
+  new_data = new_data.store_uint(msg_hash, 256);
+  new_data = new_data.store_uint(exp_time, 32);
+  slice target_slice = target_msg.begin_parse();
+  int target = target_slice~load_uint(32);
+  new_data = new_data.store_uint(target, 32);
+  set_data(new_data.end_cell());
+}

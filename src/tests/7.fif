@@ -1,0 +1,106 @@
+"Asm.fif" include
+"TonUtil.fif" include
+"wallets/0.pk" load-generate-keypair constant priv0 constant pub0
+"wallets/1.pk" load-generate-keypair constant priv1 constant pub1
+"wallets/2.pk" load-generate-keypair constant priv2 constant pub2
+"wallets/3.pk" load-generate-keypair constant priv3 constant pub3
+"wallets/4.pk" load-generate-keypair constant priv4 constant pub4
+"wallets/5.pk" load-generate-keypair constant priv5 constant pub5
+"wallets/6.pk" load-generate-keypair constant priv6 constant pub6
+"wallets/7.pk" load-generate-keypair constant priv7 constant pub7
+"wallets/8.pk" load-generate-keypair constant priv8 constant pub8
+"wallets/9.pk" load-generate-keypair constant priv9 constant pub9
+
+// current continuation slice
+PROGRAM{ "fif/7.fif" include }END>c <s constant cc
+
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+dup constant msg hashu constant hash
+
+// expired order test
+
+// msg slice
+<b pub4 B, hash priv3 ed25519_sign_uint B, b>
+<b pub3 B, hash priv4 ed25519_sign_uint B, swap ref, b>
+<b pub0 B, hash priv0 ed25519_sign_uint B, swap ref, b> // signatures
+<b 1 4 u, msg ref, swap ref, b> <s // flag, signed_msg ref, signatures ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b
+134 32 u,
+0b111 128 u,
+hash 256 u,
+b>
+<b pub0 B, b>
+<b 5 32 u, 1 8 u, swap ref, swap ref, b> // seqno, k, keys ref, orders ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+32 u@+ swap 6 <> abort"seqno"
+8 u@+ swap 1 <> abort"k"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+s>
+
+// 3 orders test
+
+// msg slice
+<b pub9 B, hash priv9 ed25519_sign_uint B, b>
+<b pub8 B, hash priv8 ed25519_sign_uint B, swap ref, b>
+<b pub7 B, hash priv7 ed25519_sign_uint B, swap ref, b>
+<b pub6 B, hash priv6 ed25519_sign_uint B, swap ref, b>
+<b pub0 B, hash priv0 ed25519_sign_uint B, swap ref, b> // signatures
+<b 1 4 u, msg ref, swap ref, b> <s // flag, signed_msg ref, signatures ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b
+8000 32 u,
+0b111 128 u,
+<b 1378 32 u, b> hashu 256 u,
+b>
+<b
+8000 32 u,
+0b1111 128 u,
+<b 1377 32 u, b> hashu 256 u,
+swap ref,
+b>
+<b
+7000 32 u,
+0b11111 128 u,
+<b 1378 32 u, b> hashu 256 u,
+swap ref,
+b> // orders
+<b pub9 B, b>
+<b pub8 B, swap ref, b>
+<b pub0 B, swap ref, b>
+<b 5 32 u, 2 8 u, swap ref, swap ref, b> // seqno, k, keys ref, orders ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+128 u@+ swap 0b111 <> abort"0b111"
+32 u@+ swap 6 <> abort"seqno"
+8 u@+ swap 2 <> abort"k"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub8 256 B>u@ <> abort"key8"
+ref@ <s
+256 u@+ swap pub9 256 B>u@ <> abort"key9"
+s>
+
+cr ."ok!" cr

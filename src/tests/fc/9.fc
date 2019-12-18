@@ -1,0 +1,204 @@
+int sum(int x) {
+  int sum = 0;
+  while (x > 0) {
+    if (x & 1) {
+      sum += 1;
+    }
+    x >>= 1;
+  }
+  return sum;
+}
+
+() recv_internal(slice in_msg) impure {
+  if (in_msg~load_uint(4) == 0) {
+    return();
+  }
+  slice signed_msg = (in_msg~load_ref()).begin_parse();
+  var msg_hash = slice_hash(signed_msg);
+  int seqno = signed_msg~load_uint(32);
+  int exp_time = signed_msg~load_uint(32);
+  throw_if(35, 1000 > exp_time); ;; now() > exp_time
+  cell target_msg = signed_msg~load_ref();
+
+  slice data = get_data().begin_parse();
+  throw_if(33, data~load_uint(32) != seqno);
+  int k = data~load_uint(8);
+
+  int correct_signatures = 0;
+  int key_mask = 1;
+  slice key_slice = data;
+  do {
+    key_slice = (key_slice~load_ref()).begin_parse();
+    var key = key_slice~load_uint(256);
+    slice signatures_slice = in_msg;
+
+    do {
+      signatures_slice = (signatures_slice~load_ref()).begin_parse();
+      if (key == signatures_slice~load_uint(256)) {
+        if (check_signature(msg_hash, signatures_slice~load_bits(512), key)) {
+          correct_signatures = correct_signatures | key_mask;
+        }
+      }
+    } until (signatures_slice.slice_refs() == 0);
+
+    key_mask <<= 1;
+  } until (key_slice.slice_refs() == 0);
+
+  throw_if(34, correct_signatures == 0);
+  int add_new_order = true;
+  int msg_not_sent = true;
+  accept_message();
+
+  if (sum(correct_signatures) >= k) {
+    send_raw_message(target_msg, 3);
+    add_new_order = false;
+    msg_not_sent = false;
+  }
+
+  var keys = data~load_ref();
+  var target_msg_hash = cell_hash(target_msg);
+  var orders = begin_cell();
+  int has_orders = false;
+
+  while (data.slice_refs()) {
+    data = (data~load_ref()).begin_parse();
+    int order_exp_time = data~load_uint(32);
+    if (1000 < order_exp_time) {  ;; now() < exp_time
+      int order_correct_signatures = data~load_uint(128);
+      int order_target_msg_hash = data~load_uint(256);
+      int save_order = true;
+      if ((order_exp_time == exp_time) &
+        (order_target_msg_hash == target_msg_hash)) {
+        add_new_order = false;
+        if (msg_not_sent) {
+          order_correct_signatures = order_correct_signatures |
+            correct_signatures;
+          if (sum(order_correct_signatures) >= k) {
+            save_order = false;
+            msg_not_sent = false;
+            send_raw_message(target_msg, 3);
+          }
+        } else {
+          save_order = false;
+        }
+      }
+
+      if (save_order) {
+        var new_order = begin_cell()
+          .store_uint(order_exp_time, 32)
+          .store_uint(order_correct_signatures, 128)
+          .store_uint(order_target_msg_hash, 256);
+        if (has_orders) {
+          new_order = new_order.store_ref(orders.end_cell());
+        } else {
+          has_orders = true;
+        }
+        orders = new_order;
+      }
+    }
+  }
+
+  if (add_new_order) {
+    var new_order = begin_cell()
+      .store_uint(exp_time, 32)
+      .store_uint(correct_signatures, 128)
+      .store_uint(target_msg_hash, 256);
+    if (has_orders) {
+      new_order = new_order.store_ref(orders.end_cell());
+    } else {
+      has_orders = true;
+    }
+    orders = new_order;
+  }
+
+  var new_data = begin_cell()
+    .store_uint(seqno + 1, 32)
+    .store_uint(k, 8)
+    .store_ref(keys);
+  if (has_orders) {
+    new_data = new_data.store_ref(orders.end_cell());
+  }
+  set_data(new_data.end_cell());
+}
+
+int seqno() method_id {
+  return get_data().begin_parse().preload_uint(32);
+}
+
+int get_orders_n() method_id {
+  var data = get_data().begin_parse();
+  data~load_ref();
+  int n = 0;
+  while (data.slice_refs()) {
+    data = (data~load_ref()).begin_parse();
+    n = n + 1;
+  }
+  return n;
+}
+
+(int, int, int) get_order_by_n(int n) method_id {
+  var data = get_data().begin_parse();
+  data~load_ref();
+  while (data.slice_refs()) {
+    data = (data~load_ref()).begin_parse();
+    if (n == 0) {
+      return (data~load_uint(32), data~load_uint(128), data~load_uint(256));
+    }
+    n = n - 1;
+  }
+  return (0, 0, 0);
+}
+
+int get_orders_n_of_owner(int key, int signed) method_id {
+  var data = get_data().begin_parse();
+  var key_slice = data;
+  int key_mask = 1;
+  int found_key_mask = 0;
+  do {
+    key_slice = (key_slice~load_ref()).begin_parse();
+    if (key == key_slice~load_uint(256)) {
+      found_key_mask = key_mask;
+    }
+    key_mask <<= 1;
+  } until (key_slice.slice_refs() == 0);
+
+  data~load_ref();
+  int n = 0;
+  while (data.slice_refs()) {
+    data = (data~load_ref()).begin_parse();
+    data~load_uint(32);
+    int signatures = data~load_uint(128);
+    if ((signatures & found_key_mask) == signed) {
+      n = n + 1;
+    }
+  }
+  return n;
+}
+
+(int, int, int) get_order_by_n_and_owner(int n, int key, int signed) method_id {
+  var data = get_data().begin_parse();
+  var key_slice = data;
+  int key_mask = 1;
+  int found_key_mask = 0;
+  do {
+    key_slice = (key_slice~load_ref()).begin_parse();
+    if (key == key_slice~load_uint(256)) {
+      found_key_mask = key_mask;
+    }
+    key_mask <<= 1;
+  } until (key_slice.slice_refs() == 0);
+
+  data~load_ref();
+  while (data.slice_refs()) {
+    data = (data~load_ref()).begin_parse();
+    int exp_time = data~load_uint(32);
+    int signatures = data~load_uint(128);
+    if ((signatures & found_key_mask) == signed) {
+      if (n == 0) {
+        return (exp_time, signatures, data~load_uint(256));
+      }
+      n = n - 1;
+    }
+  }
+  return (0, 0, 0);
+}

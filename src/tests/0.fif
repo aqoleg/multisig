@@ -1,0 +1,36 @@
+"Asm.fif" include
+
+// msg slice
+<b
+0 4 u,
+0b111 8 u,
+0b01110101 16 u,
+0b111111111111110001 32 u,
+0b10111110000111111111111110001110101011 64 u,
+0xfffaaffa3445512 128 u,
+0b0111111111111011011 256 u,
+b> <s
+
+// current continuation slice
+PROGRAM{ "fif/0.fif" include }END>c <s
+
+// c4 cell
+<b 0 4 u, b>
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+2 u@+ swap 0<> abort"-1"
+4 u@+ swap 0 <> abort"0"
+8 u@+ swap 3 <> abort"0b111"
+16 u@+ swap 5 <> abort"0b01110101"
+32 u@+ swap 15 <> abort"0b111111111111110001"
+64 u@+ swap 27 <> abort"0b10111110000111111111111110001110101011"
+128 u@+ swap 36 <> abort"0xfffaaffa3445512"
+256 u@+ swap 16 <> abort"0b0111111111111011011"
+s>
+
+cr ."ok!" cr

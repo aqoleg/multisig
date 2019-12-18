@@ -1,0 +1,138 @@
+"Asm.fif" include
+"TonUtil.fif" include
+"wallets/0.pk" load-generate-keypair drop constant pub0
+"wallets/1.pk" load-generate-keypair drop constant pub1
+"wallets/2.pk" load-generate-keypair drop constant pub2
+"wallets/3.pk" load-generate-keypair drop constant pub3
+
+// current continuation slice
+PROGRAM{ "fif/3.fif" include }END>c <s constant cc
+
+// 0 - 0 test
+
+// msg slice
+<b pub0 B, b> // signatures
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, swap ref, b> <s // flag, signed_msg ref, signatures ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub0 B, b>
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0" 
+s>
+
+// 0 - 3201 test
+
+// msg slice
+<b pub0 B, b> // signatures
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, swap ref, b> <s // flag, signed_msg ref, signatures ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub1 B, b>
+<b pub0 B, swap ref, b>
+<b pub2 B, swap ref, b>
+<b pub3 B, swap ref, b>
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub3 256 B>u@ <> abort"key3"
+ref@ <s
+256 u@+ swap pub2 256 B>u@ <> abort"key2"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+s>
+
+// 0123 - 1 test
+
+// msg slice
+<b pub3 B, b>
+<b pub2 B, swap ref, b>
+<b pub1 B, swap ref, b>
+<b pub0 B, swap ref, b> // signatures
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, swap ref, b> <s // flag, signed_msg ref, signatures ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub1 B, b>
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+ref@ <s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+s>
+
+// 0123 - 123 test
+
+// msg slice
+<b pub3 B, b>
+<b pub2 B, swap ref, b>
+<b pub1 B, swap ref, b>
+<b pub0 B, swap ref, b> // signatures
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, swap ref, b> <s // flag, signed_msg ref, signatures ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub3 B, b>
+<b pub2 B, swap ref, b>
+<b pub1 B, swap ref, b>
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+256 u@+ swap pub2 256 B>u@ <> abort"key2"
+256 u@+ swap pub3 256 B>u@ <> abort"key3"
+ref@ <s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+ref@ <s
+256 u@+ swap pub2 256 B>u@ <> abort"key2"
+ref@ <s
+256 u@+ swap pub3 256 B>u@ <> abort"key3"
+s>
+
+cr ."ok!" cr

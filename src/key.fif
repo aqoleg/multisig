@@ -1,0 +1,14 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+
+// usage
+{ ."usage: " @' $0 type ." <filename-base>" cr
+  ."Shows the public key of the private key stored in the file <filename-base>.pk" cr
+  ."If there is no such file, it will be created." cr 1 halt
+} : usage
+
+// initialize arguments
+def? $1 ' usage ifnot
+
+$1 +".pk" load-generate-keypair drop 256 B>u@
+."Public key: " . cr

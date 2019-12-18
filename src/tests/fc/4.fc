@@ -1,0 +1,48 @@
+int sum(int x) {
+  int sum = 0;
+  while (x > 0) {
+    if (x & 1) {
+      sum += 1;
+    }
+    x >>= 1;
+  }
+  return sum;
+}
+
+() recv_internal(slice in_msg) impure {
+  if (in_msg~load_uint(4) == 0) {
+    return();
+  }
+  slice signed_msg = (in_msg~load_ref()).begin_parse();
+  var msg_hash = slice_hash(signed_msg);
+  int seqno = signed_msg~load_uint(32);
+  int exp_time = signed_msg~load_uint(32);
+  throw_if(35, 1000 > exp_time); ;; now() > exp_time
+  cell target_msg = signed_msg~load_ref();
+
+  slice data = get_data().begin_parse();
+  throw_if(33, data~load_uint(32) != seqno);
+  int k = data~load_uint(8);
+
+  int correct_signatures = 0;
+  int key_mask = 1;
+  slice key_slice = data;
+  do {
+    key_slice = (key_slice~load_ref()).begin_parse();
+    var key = key_slice~load_uint(256);
+    slice signatures_slice = in_msg;
+
+    do {
+      signatures_slice = (signatures_slice~load_ref()).begin_parse();
+      if (key == signatures_slice~load_uint(256)) {
+        if (check_signature(msg_hash, signatures_slice~load_bits(512), key)) {
+          correct_signatures = correct_signatures | key_mask;
+        }
+      }
+    } until (signatures_slice.slice_refs() == 0);
+
+    key_mask <<= 1;
+  } until (key_slice.slice_refs() == 0);
+
+  set_data(begin_cell().store_uint(correct_signatures, 128).end_cell());
+}

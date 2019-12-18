@@ -1,0 +1,98 @@
+"Asm.fif" include
+"TonUtil.fif" include
+"wallets/0.pk" load-generate-keypair drop constant pub0
+"wallets/1.pk" load-generate-keypair drop constant pub1
+"wallets/2.pk" load-generate-keypair drop constant pub2
+"wallets/3.pk" load-generate-keypair drop constant pub3
+
+// current continuation slice
+PROGRAM{ "fif/2.fif" include }END>c <s constant cc
+
+// 1 key test
+
+// msg slice
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, b> <s // flag, signed_msg ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub0 B, b>
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0" 
+s>
+
+// 2 keys test
+
+// msg slice
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, b> <s // flag, signed_msg ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub1 B, b>
+<b pub0 B, swap ref, b>
+<b 5 32 u, 9 8 u, swap ref, <b 1 8 u, b> ref, b> // seqno, k, keys ref, order ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+s>
+
+// 3 keys test
+
+// msg slice
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, b> <s // flag, signed_msg ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b pub1 B, b>
+<b pub0 B, swap ref, b>
+<b pub2 B, swap ref, b>
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+256 u@+ swap pub2 256 B>u@ <> abort"key2"
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+ref@ <s
+256 u@+ swap pub2 256 B>u@ <> abort"key2"
+ref@ <s
+256 u@+ swap pub0 256 B>u@ <> abort"key0"
+ref@ <s
+256 u@+ swap pub1 256 B>u@ <> abort"key1"
+s>
+
+cr ."ok!" cr

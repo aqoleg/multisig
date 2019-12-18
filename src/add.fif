@@ -1,0 +1,31 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+
+// usage
+{ ."usage: " @' $0 type ." <filename-base>" cr
+  ."Add signature to the existing tx.boc file." cr 1 halt
+} : usage
+
+// initialize arguments
+$# 1 - 0= ' usage ifnot
+$1 +".pk" load-keypair =: priv =: pub
+"tx.boc" dup file-exists? not abort"/tx.boc file do not found"
+file>B B>boc
+
+<s ref@+ swap ref@+ rot dup hashu // root signatures signed_msg msg_hash 
+// new signatures
+<b
+pub B,
+swap priv ed25519_sign_uint B,
+rot ref,
+b> // root signed_msg signatures
+// new message
+<b
+rot ref,
+swap ref,
+swap s,
+b>
+
+// create bag of cell from the message, save, print
+2 boc+>B "tx.boc" tuck B>file
+."Message saved to file " type cr

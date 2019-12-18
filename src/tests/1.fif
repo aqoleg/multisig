@@ -1,0 +1,84 @@
+"Asm.fif" include
+
+// current continuation slice
+PROGRAM{ "fif/1.fif" include }END>c <s constant cc
+
+// test zero flag
+
+// msg slice
+<b 0 4 u, b> <s
+
+// current continuation slice
+cc
+
+// c4 cell
+<b 0 4 u, b>
+
+runvm
+
+swap 0<> abort"exit code"
+
+// expiration time exception test
+
+// msg slice
+<b 1378 32 u, b> // target_msg
+<b 0 32 u, 0 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, b> <s // flag, signed_msg ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b 0 4 u, b>
+
+runvm
+
+swap 35 <> abort"exit code"
+
+// seqno exception test
+
+// msg slice
+<b 1378 32 u, b> // target_msg
+<b 3 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+<b 1 4 u, swap ref, b> <s // flag, signed_msg ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b 1777 32 u, b> // keys
+<b 4 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 33 <> abort"exit code"
+
+// read write test
+
+// msg slice
+<b 1378 32 u, b> // target_msg
+<b 5 32 u, 8000 32 u, swap ref, b> // signed_msg: seqno, exp_time, target_msg ref
+dup hashu constant hash
+<b 1 4 u, swap ref, b> <s // flag, signed_msg ref
+
+// current continuation slice
+cc
+
+// c4 cell
+<b 1777 32 u, b> // keys
+<b 5 32 u, 9 8 u, swap ref, b> // seqno, k, keys ref
+
+runvm
+
+swap 0<> abort"exit code"
+
+// parse new c4 cell
+<s
+32 u@+ swap 6 <> abort"seqno"
+8 u@+ swap 9 <> abort"k"
+256 u@+ swap hash <> abort"msg_hash"
+32 u@+ swap 8000 <> abort"exp_time"
+32 u@+ swap 1378 <> abort"target"
+ref@ <s 32 u@+ swap 1777 <> abort"keys" s>
+
+cr ."ok!" cr

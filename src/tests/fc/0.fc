@@ -1,0 +1,31 @@
+int sum(int x) {
+  int sum = 0;
+  while (x > 0) {
+    if (x & 1) {
+      sum += 1;
+    }
+    x >>= 1;
+  }
+  return sum;
+}
+
+() recv_internal(slice in_msg) impure {
+  int a = sum(in_msg~load_uint(4));
+  int b = sum(in_msg~load_uint(8));
+  int c = sum(in_msg~load_uint(16));
+  int d = sum(in_msg~load_uint(32));
+  int e = sum(in_msg~load_uint(64));
+  int f = sum(in_msg~load_uint(128));
+  int g = sum(in_msg~load_uint(256));
+  set_data(begin_cell()
+    .store_uint(sum(-1), 2)
+    .store_uint(a, 4)
+    .store_uint(b, 8)
+    .store_uint(c, 16)
+    .store_uint(d, 32)
+    .store_uint(e, 64)
+    .store_uint(f, 128)
+    .store_uint(g, 256)
+    .end_cell()
+  );
+}
